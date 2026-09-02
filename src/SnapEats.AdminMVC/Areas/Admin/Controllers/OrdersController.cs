@@ -28,8 +28,12 @@ public class OrdersController : Controller
         var result = await _orderService.GetOrdersAsync(page, 10, status);
         ViewBag.Status = status;
 
-        var apiBaseUrl = HttpContext.RequestServices.GetRequiredService<IConfiguration>()["ApiSettings:BaseUrl"] ?? "http://localhost:5000";
-        ViewBag.SignalRApiUrl = $"{apiBaseUrl.TrimEnd('/')}/hubs/order";
+        var apiBaseUrl = HttpContext.RequestServices
+            .GetRequiredService<IConfiguration>()["ApiSettings:BaseUrl"]
+            ?? "http://localhost:5065/api/v1/";
+
+        var apiUri = new Uri(apiBaseUrl);
+        ViewBag.SignalRApiUrl = $"{apiUri.Scheme}://{apiUri.Authority}/hubs/order";
 
         return View(result);
     }
@@ -115,4 +119,3 @@ public class OrdersController : Controller
         return RedirectToAction(nameof(Index));
     }
 }
-
