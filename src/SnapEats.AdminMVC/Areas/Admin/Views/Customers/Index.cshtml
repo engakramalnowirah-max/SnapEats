@@ -1,0 +1,201 @@
+@model PagedResultViewModel<CustomerViewModel>
+@{
+    ViewData["Title"] = "العملاء";
+    var search = ViewBag.Search as string;
+}
+
+<div class="page-header-bar">
+    <div class="header-title">
+        <h1><i class="fas fa-users"></i> إدراة العملاء والمستخدمين</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin/Dashboard">لوحة التحكم</a></li>
+                <li class="breadcrumb-item active">العملاء</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row mb-4 align-items-center">
+            <div class="col-md-6">
+                <form method="get" action="/Admin/Customers" class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" name="search" class="form-control" placeholder="بحث باسم العميل، البريد، أو الجوال..."
+                           value="@search" />
+                </form>
+            </div>
+            <div class="col-md-6 text-end d-none d-md-block">
+                <span class="text-muted font-weight-bold">إجمالي العملاء: @Model.TotalCount</span>
+            </div>
+        </div>
+
+        @if (Model.Items.Any())
+        {
+            <div id="customersGrid" style="display:none;"></div>
+            <div id="customersTable">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>العميل</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>رقم الجوال</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var customer in Model.Items)
+                            {
+                                <tr>
+                                    <td><strong>#@customer.Id</strong></td>
+                                    <td>
+                                        <div style="display:flex;align-items:center;gap:12px;">
+                                            <div class="rounded-circle text-white d-flex align-items-center justify-content-center" style="width:40px;height:40px;font-size:0.95rem;font-weight:800;background:linear-gradient(135deg, var(--primary) 0%, #FF2E43 100%);flex-shrink:0;">
+                                                @(string.IsNullOrEmpty(customer.FullName) ? "U" : customer.FullName.Substring(0,1))
+                                            </div>
+                                            <span class="fw-bold text-secondary">@customer.FullName</span>
+                                        </div>
+                                    </td>
+                                    <td>@customer.Email</td>
+                                    <td dir="ltr">@customer.Phone</td>
+                                    <td>
+                                        <div style="display:flex;gap:8px;align-items:center;">
+                                            <a href="/Admin/Customers/Details/@customer.Id" class="k-button k-button-md k-rounded-md k-info" title="عرض الملف">
+                                                <i class="fas fa-eye me-1"></i> عرض
+                                            </a>
+                                            <a href="/Admin/Customers/Edit/@customer.Id" class="k-button k-button-md k-rounded-md k-warning" title="تعديل">
+                                                <i class="fas fa-edit me-1"></i> تعديل
+                                            </a>
+                                            <button type="button" class="k-button k-button-md k-rounded-md k-danger btn-delete" data-id="@customer.Id" data-name="@customer.FullName" title="حذف">
+                                                <i class="fas fa-trash me-1"></i> حذف
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="pagination-wrap">
+                <div class="pagination-info">
+                    عرض @Model.Items.Count من إجمالي @Model.TotalCount عميل
+                </div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                            <a class="page-link" href="/Admin/Customers?page=@(Model.PageNumber - 1)&search=@search">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                <a class="page-link" href="/Admin/Customers?page=@i&search=@search">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                            <a class="page-link" href="/Admin/Customers?page=@(Model.PageNumber + 1)&search=@search">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h5>لا يوجد عملاء</h5>
+                <p>لم يتم تسجيل أي حسابات عملاء بعد في المنصة.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<form id="deleteForm" style="display:none;" method="post" asp-area="Admin" asp-controller="Customers" asp-action="Delete">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteId" />
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            try {
+                var modelData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Items));
+
+                if (!modelData || modelData.length === 0) {
+                    $("#customersGrid").html("<div class='empty-state'><i class='fas fa-users'></i><h5>لا توجد بيانات</h5></div>");
+                    $("#customersTable").hide();
+                    $("#customersGrid").show();
+                    return;
+                }
+
+                if (typeof $.fn.kendoGrid === 'undefined') {
+                    return;
+                }
+
+                $("#customersGrid").kendoGrid({
+                    dataSource: {
+                        data: modelData,
+                        pageSize: 10,
+                        schema: {
+                            model: {
+                                id: "id",
+                                fields: {
+                                    id: { type: "number" },
+                                    fullName: { type: "string" },
+                                    email: { type: "string" },
+                                    phone: { type: "string" },
+                                    createdAt: { type: "date" }
+                                }
+                            }
+                        }
+                    },
+                    height: 520,
+                    sortable: true,
+                    pageable: {
+                        buttonCount: 5,
+                        pageSizes: [10, 20, 50],
+                        messages: {
+                            display: "عرض {0} - {1} من {2} عميل",
+                            empty: "لا يوجد عملاء"
+                        }
+                    },
+                    columns: [
+                        { field: "id", title: "#", width: 80, template: "<strong>#= '#' + id #</strong>" },
+                        {
+                            field: "fullName", title: "العميل", width: 220,
+                            template: "<div style='display:flex;align-items:center;gap:12px;'><div class='rounded-circle text-white d-flex align-items-center justify-content-center' style='width:36px;height:36px;font-size:0.85rem;font-weight:800;background:linear-gradient(135deg, var(--primary) 0%, #FF2E43 100%);flex-shrink:0;'>#= fullName ? fullName.substring(0,1) : 'U' #</div><span class='fw-bold text-secondary'>#= fullName #</span></div>"
+                        },
+                        { field: "email", title: "البريد الإلكتروني" },
+                        { field: "phone", title: "رقم الجوال", width: 160 },
+                        {
+                            field: "createdAt", title: "تاريخ التسجيل", width: 150,
+                            template: "#= createdAt ? kendo.toString(new Date(createdAt), 'dd/MM/yyyy') : '' #"
+                        },
+                        {
+                            title: "الإجراءات", width: 200, sortable: false,
+                            template: "<div style='display:flex;gap:6px;'><a href='/Admin/Customers/Details/#= id #' class='k-button k-button-md k-rounded-md k-info' title='عرض'><i class='fas fa-eye me-1'></i>عرض</a>" +
+                                "<a href='/Admin/Customers/Edit/#= id #' class='k-button k-button-md k-rounded-md k-warning' title='تعديل'><i class='fas fa-edit me-1'></i>تعديل</a>" +
+                                "<button type='button' class='k-button k-button-md k-rounded-md k-danger btn-delete' data-id='#= id #' data-name='#= fullName #' title='حذف'><i class='fas fa-trash me-1'></i>حذف</button></div>"
+                        }
+                    ]
+                });
+
+                $("#customersTable").hide();
+                $("#customersGrid").show();
+            } catch (e) {
+                console.error('Error initializing customers grid:', e);
+                $("#customersGrid").hide();
+                $("#customersTable").show();
+            }
+        });
+    </script>
+}

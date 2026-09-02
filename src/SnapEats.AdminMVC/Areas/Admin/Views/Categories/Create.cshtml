@@ -1,0 +1,64 @@
+@model CreateCategoryViewModel
+@{
+    ViewData["Title"] = "إضافة تصنيف جديد";
+}
+
+<div class="page-header-bar">
+    <div class="header-title">
+        <h1><i class="fas fa-plus-circle"></i> إضافة تصنيف طعام جديد</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin/Dashboard">لوحة التحكم</a></li>
+                <li class="breadcrumb-item"><a href="/Admin/Categories">التصنيفات</a></li>
+                <li class="breadcrumb-item active">إضافة تصنيف</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span><i class="fas fa-edit"></i> بيانات التصنيف الجديد</span>
+    </div>
+    <div class="card-body">
+        <form asp-area="Admin" asp-controller="Categories" asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="row">
+                <div class="col-md-8 col-lg-6">
+                    <div class="form-group">
+                        <label asp-for="Name" class="form-label"></label>
+                        <input asp-for="Name" class="form-control" placeholder="مثال: وجبات سريعة، مشروبات، حلويات..." />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-10 col-lg-8">
+                    <div class="form-group">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="4"
+                                  placeholder="أدخل وصفاً تفصيلياً للتصنيف (اختياري)..."></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4" />
+
+            <div class="d-flex gap-3">
+                <button type="submit" class="k-button k-button-md k-rounded-md k-primary">
+                    <i class="fas fa-check-circle me-1"></i> حفظ التصنيف
+                </button>
+                <a href="/Admin/Categories" class="k-button k-button-md k-rounded-md k-outline">
+                    <i class="fas fa-arrow-right me-1"></i> إلغاء ورجوع
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

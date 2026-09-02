@@ -1,0 +1,79 @@
+@model LoginViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "تسجيل الدخول";
+}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تسجيل الدخول - منصة سناب إيتس</title>
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2024.2.514/styles/kendo.common.min.css" />
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2024.2.514/styles/kendo.rtl.min.css" />
+    <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2024.2.514/styles/kendo.default-v2.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/snapeats.css" asp-append-version="true" />
+</head>
+
+<body class="login-page">
+    <div class="login-card">
+        <div class="login-logo">
+            <i class="fas fa-utensils"></i>
+            <h2>سناب إيتس</h2>
+            <p>لوحة التحكم والإدارة الذكية</p>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors?.Count > 0)
+        {
+            <div class="alert alert-danger p-3 rounded-3 mb-4" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                @Html.ValidationSummary(true, "", new { @class = "text-danger mb-0 d-inline" })
+            </div>
+        }
+
+        <form asp-area="Admin" asp-controller="Auth" asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-4">
+                <label asp-for="Email" class="form-label">البريد الإلكتروني</label>
+                <input asp-for="Email" class="form-control" placeholder="admin@snapeats.com" dir="ltr" />
+                <span asp-validation-for="Email" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Password" class="form-label">كلمة المرور</label>
+                <input asp-for="Password" type="password" class="form-control" placeholder="••••••••" dir="ltr" />
+                <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+            </div>
+
+            <div class="mb-4 d-flex justify-content-between align-items-center">
+                <div class="form-check">
+                    <input asp-for="RememberMe" class="form-check-input" id="rememberMeCheck" />
+                    <label class="form-check-label font-weight-bold" for="rememberMeCheck">تذكر بياناتي</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt me-2"></i>
+                تسجيل الدخول إلى لوحة التحكم
+            </button>
+        </form>
+
+        <div class="text-center mt-4">
+            <small class="text-muted">© @DateTime.Now.Year - منصة سناب إيتس. جميع الحقوق محفوظة</small>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://kendo.cdn.telerik.com/2024.2.514/js/kendo.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/snapeats.js" asp-append-version="true"></script>
+</body>
+
+</html>

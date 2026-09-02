@@ -1,0 +1,71 @@
+@model CustomerViewModel
+@{
+    ViewData["Title"] = "تعديل بيانات العميل";
+}
+
+<div class="page-header-bar">
+    <div class="header-title">
+        <h1><i class="fas fa-user-edit"></i> تعديل بيانات العميل</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin/Dashboard">لوحة التحكم</a></li>
+                <li class="breadcrumb-item"><a href="/Admin/Customers">العملاء</a></li>
+                <li class="breadcrumb-item active">تعديل #@Model.Id</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span><i class="fas fa-user-circle"></i> تعديل العميل #@Model.Id</span>
+    </div>
+    <div class="card-body">
+        <form asp-area="Admin" asp-controller="Customers" asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="FullName" class="form-label"></label>
+                        <input asp-for="FullName" class="form-control" placeholder="أدخل اسم العميل الكامل..." />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Email" class="form-label"></label>
+                        <input asp-for="Email" class="form-control bg-light text-muted" readonly />
+                        <small class="text-muted">البريد الإلكتروني معرف ثابت ولا يمكن تغييره</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label asp-for="Phone" class="form-label"></label>
+                        <input asp-for="Phone" class="form-control" dir="ltr" placeholder="+966 5X XXX XXXX" />
+                        <span asp-validation-for="Phone" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4" />
+
+            <div class="d-flex gap-3">
+                <button type="submit" class="k-button k-button-md k-rounded-md k-primary">
+                    <i class="fas fa-save me-1"></i> حفظ التغييرات
+                </button>
+                <a href="/Admin/Customers" class="k-button k-button-md k-rounded-md k-outline">
+                    <i class="fas fa-arrow-right me-1"></i> إلغاء ورجوع
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

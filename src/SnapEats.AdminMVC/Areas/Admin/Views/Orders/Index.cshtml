@@ -1,0 +1,234 @@
+@model PagedResultViewModel<OrderViewModel>
+@{
+    ViewData["Title"] = "الطلبات";
+    var currentStatus = ViewBag.Status as string;
+}
+
+<div class="page-header-bar">
+    <div class="header-title">
+        <h1><i class="fas fa-shopping-cart"></i> إدارة الطلبات وخدمات التوصيل</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin/Dashboard">لوحة التحكم</a></li>
+                <li class="breadcrumb-item active">الطلبات</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="status-filter">
+            <a href="/Admin/Orders"
+               class="k-button k-button-md k-rounded-md k-outline @(string.IsNullOrEmpty(currentStatus) ? "k-primary" : "")">جميع الطلبات</a>
+            <a href="/Admin/Orders?status=Pending"
+               class="k-button k-button-md k-rounded-md k-outline @(currentStatus == "Pending" ? "k-warning" : "")">قيد الانتظار</a>
+            <a href="/Admin/Orders?status=Confirmed"
+               class="k-button k-button-md k-rounded-md k-outline @(currentStatus == "Confirmed" ? "k-info" : "")">مؤكد</a>
+            <a href="/Admin/Orders?status=Preparing"
+               class="k-button k-button-md k-rounded-md k-outline @(currentStatus == "Preparing" ? "k-primary" : "")">قيد التحضير</a>
+            <a href="/Admin/Orders?status=OutForDelivery"
+               class="k-button k-button-md k-rounded-md k-outline @(currentStatus == "OutForDelivery" ? "k-secondary" : "")">قيد التوصيل</a>
+            <a href="/Admin/Orders?status=Delivered"
+               class="k-button k-button-md k-rounded-md k-outline @(currentStatus == "Delivered" ? "k-success" : "")">تم التوصيل</a>
+            <a href="/Admin/Orders?status=Cancelled"
+               class="k-button k-button-md k-rounded-md k-outline @(currentStatus == "Cancelled" ? "k-danger" : "")">ملغي</a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body" id="ordersContainer" data-current-status="@(currentStatus ?? "")">
+        <div id="ordersGrid" style="display:none;"></div>
+        <div id="ordersTable" style="display:none;">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>رقم الطلب</th>
+                            <th>العميل</th>
+                            <th>تاريخ الطلب</th>
+                            <th>عدد العناصر</th>
+                            <th>المجموع الكلي</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in Model.Items)
+                        {
+                            <tr>
+                                <td><strong>#@order.Id</strong></td>
+                                <td><strong class="text-secondary">@order.CustomerName</strong></td>
+                                <td>@order.OrderDateFormatted</td>
+                                <td>@order.ItemCount عناصر</td>
+                                <td><strong class="text-primary">@order.TotalFormatted</strong> ريال</td>
+                                <td>
+                                    <span class="k-chip k-chip-solid-@(order.Status == "Pending" ? "warning" : order.Status == "Confirmed" ? "info" : order.Status == "Preparing" ? "primary" : order.Status == "OutForDelivery" ? "secondary" : order.Status == "Delivered" ? "success" : "danger")">@order.StatusText</span>
+                                </td>
+                                <td>
+                                    <div style="display:flex;gap:6px;align-items:center;">
+                                        <a href="/Admin/Orders/Details/@order.Id" class="k-button k-button-md k-rounded-md k-info" title="عرض التفاصيل">
+                                            <i class="fas fa-eye me-1"></i> عرض
+                                        </a>
+                                        <a href="/Admin/Orders/Edit/@order.Id" class="k-button k-button-md k-rounded-md k-warning" title="تعديل">
+                                            <i class="fas fa-edit me-1"></i> تعديل
+                                        </a>
+                                        <button type="button" class="k-button k-button-md k-rounded-md k-danger btn-delete" data-id="@order.Id" data-name="#@order.Id" title="حذف">
+                                            <i class="fas fa-trash me-1"></i> حذف
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (!Model.Items.Any())
+        {
+            <div class="empty-state" id="ordersEmptyState">
+                <i class="fas fa-shopping-cart"></i>
+                <h5>لا توجد طلبات في هذه الحالة</h5>
+                <p>لم يتم العثور على أي طلبات مسجلة تحت هذه التصفية.</p>
+            </div>
+        }
+
+        <div class="pagination-wrap">
+            <div class="pagination-info">
+                عرض @Model.Items.Count من إجمالي @Model.TotalCount طلب
+            </div>
+            <nav>
+                <ul class="pagination mb-0">
+                    <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                        <a class="page-link" href="/Admin/Orders?page=@(Model.PageNumber - 1)&status=@currentStatus">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                            <a class="page-link" href="/Admin/Orders?page=@i&status=@currentStatus">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                        <a class="page-link" href="/Admin/Orders?page=@(Model.PageNumber + 1)&status=@currentStatus">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<form id="deleteForm" style="display:none;" method="post" action="/Admin/Orders/Delete">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteId" />
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            try {
+                var modelData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Items));
+                var currentStatus = '@(currentStatus ?? "")';
+
+                if (!modelData || modelData.length === 0) {
+                    $("#ordersGrid").hide();
+                    $("#ordersTable").hide();
+                    $("#ordersEmptyState").show();
+                    return;
+                }
+
+                if (typeof $.fn.kendoGrid === 'undefined') {
+                    $("#ordersTable").show();
+                    return;
+                }
+
+                var statusMap = {
+                    "Pending": "قيد الانتظار",
+                    "Confirmed": "مؤكد",
+                    "Preparing": "قيد التحضير",
+                    "OutForDelivery": "قيد التوصيل",
+                    "Delivered": "تم التوصيل",
+                    "Cancelled": "ملغي"
+                };
+                var statusColors = {
+                    "Pending": "warning",
+                    "Confirmed": "info",
+                    "Preparing": "primary",
+                    "OutForDelivery": "secondary",
+                    "Delivered": "success",
+                    "Cancelled": "danger"
+                };
+
+                $("#ordersGrid").kendoGrid({
+                    dataSource: {
+                        data: modelData,
+                        pageSize: 10,
+                        schema: {
+                            model: {
+                                id: "Id",
+                                fields: {
+                                    Id: { type: "number" },
+                                    customerName: { type: "string" },
+                                    orderDate: { type: "date" },
+                                    status: { type: "string" },
+                                    totalAmount: { type: "number" },
+                                    itemCount: { type: "number" }
+                                }
+                            }
+                        }
+                    },
+                    height: 520,
+                    sortable: true,
+                    pageable: {
+                        buttonCount: 5,
+                        pageSizes: [10, 20, 50],
+                        messages: {
+                            display: "عرض {0} - {1} من {2} طلب",
+                            empty: "لا توجد طلبات"
+                        }
+                    },
+                    columns: [
+                        { field: "Id", title: "رقم الطلب", width: 90, template: "<strong>#= '#' + Id #</strong>" },
+                        { field: "customerName", title: "العميل", template: "<strong class='text-secondary'>#= customerName #</strong>" },
+                        {
+                            field: "orderDate", title: "التاريخ والوقت", width: 160,
+                            template: "#= orderDate ? kendo.toString(new Date(orderDate), 'dd/MM/yyyy HH:mm') : '' #"
+                        },
+                        { field: "itemCount", title: "العناصر", width: 100, template: "#= itemCount # عناصر" },
+                        {
+                            field: "totalAmount", title: "المجموع", width: 130,
+                            template: "<strong class='text-primary'>#= kendo.toString(totalAmount, 'n2') #</strong> ريال"
+                        },
+                        {
+                            field: "status", title: "الحالة", width: 130,
+                            template: function(dataItem) {
+                                var color = statusColors[dataItem.status] || "secondary";
+                                var text = statusMap[dataItem.status] || dataItem.status;
+                                return "<span class='k-chip k-chip-solid-" + color + "'>" + text + "</span>";
+                            }
+                        },
+                        {
+                            title: "الإجراءات", width: 220, sortable: false,
+                            template: "<div style='display:flex;gap:6px;'><a href='/Admin/Orders/Details/#= Id #' class='k-button k-button-md k-rounded-md k-info' title='عرض'><i class='fas fa-eye me-1'></i>عرض</a>" +
+                                "<a href='/Admin/Orders/Edit/#= Id #' class='k-button k-button-md k-rounded-md k-warning' title='تعديل'><i class='fas fa-edit me-1'></i>تعديل</a>" +
+                                "<button type='button' class='k-button k-button-md k-rounded-md k-danger btn-delete' data-id='#= Id #' data-name='#' + Id + '' title='حذف'><i class='fas fa-trash me-1'></i>حذف</button></div>"
+                        }
+                    ]
+                });
+
+                $("#ordersTable").hide();
+                $("#ordersGrid").show();
+            } catch (e) {
+                console.error('Error initializing orders grid:', e);
+                $("#ordersGrid").hide();
+                $("#ordersTable").show();
+            }
+        });
+    </script>
+}

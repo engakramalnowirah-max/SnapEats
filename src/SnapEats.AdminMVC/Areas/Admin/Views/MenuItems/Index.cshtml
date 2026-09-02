@@ -1,0 +1,241 @@
+@model PagedResultViewModel<MenuItemViewModel>
+@{
+    ViewData["Title"] = "قائمة الطعام";
+    var search = ViewBag.Search as string;
+    var categoryId = ViewBag.CategoryId as int?;
+}
+
+<div class="page-header-bar">
+    <div class="header-title">
+        <h1><i class="fas fa-hamburger"></i> إدراة قائمة الطعام</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin/Dashboard">لوحة التحكم</a></li>
+                <li class="breadcrumb-item active">قائمة الطعام</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="header-actions">
+        <a href="/Admin/MenuItems/Create" class="k-button k-button-md k-rounded-md k-primary">
+            <i class="fas fa-plus me-1"></i> إضافة وجبة جديدة
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row mb-4 align-items-center">
+            <div class="col-md-6">
+                <form method="get" action="/Admin/MenuItems" class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" name="search" class="form-control" placeholder="بحث باسم الوجبة أو المنتج..."
+                           value="@search" />
+                </form>
+            </div>
+            <div class="col-md-6 text-end d-none d-md-block">
+                <span class="text-muted font-weight-bold">إجمالي الوجبات: @Model.TotalCount</span>
+            </div>
+        </div>
+
+        @if (Model.Items.Any())
+        {
+            <div id="menuItemsGrid" style="display:none;"></div>
+            <div id="menuItemsTable">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>الصورة</th>
+                                <th>اسم الوجبة</th>
+                                <th>التصنيف</th>
+                                <th>السعر الإجمالي</th>
+                                <th>حالة التوفر</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                        {
+                                            <img src="@item.ImageUrl" alt="@item.Name" class="product-image" />
+                                        }
+                                        else
+                                        {
+                                            <div class="product-image-placeholder"><i class="fas fa-utensils"></i></div>
+                                        }
+                                    </td>
+                                    <td><strong class="text-secondary">@item.Name</strong></td>
+                                    <td><span class="k-chip k-chip-solid-secondary">@item.CategoryName</span></td>
+                                    <td><strong class="text-primary">@item.Price.ToString("N2")</strong> ريال</td>
+                                    <td>
+                                        @if (item.IsAvailable)
+                                        {
+                                            <span class="k-chip k-chip-solid-success">متاح للطلب</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="k-chip k-chip-solid-danger">غير متاح حالياً</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div style="display:flex;gap:8px;align-items:center;">
+                                            <a href="/Admin/MenuItems/Edit/@item.Id" class="k-button k-button-md k-rounded-md k-warning" title="تعديل">
+                                                <i class="fas fa-edit me-1"></i> تعديل
+                                            </a>
+                                            <button type="button" class="k-button k-button-md k-rounded-md k-danger btn-delete" data-id="@item.Id" data-name="@item.Name" title="حذف">
+                                                <i class="fas fa-trash me-1"></i> حذف
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="pagination-wrap">
+                <div class="pagination-info">
+                    عرض @Model.Items.Count من إجمالي @Model.TotalCount وجبة
+                </div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                            <a class="page-link" href="/Admin/MenuItems?page=@(Model.PageNumber - 1)&search=@search">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                <a class="page-link" href="/Admin/MenuItems?page=@i&search=@search">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                            <a class="page-link" href="/Admin/MenuItems?page=@(Model.PageNumber + 1)&search=@search">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-hamburger"></i>
+                <h5>لا توجد وجبات في قائمة الطعام</h5>
+                <p>لم يتم إضافة أي وجبات بعد. ابدأ بإضافة أول وجبة إلى القائمة الآن.</p>
+                <a href="/Admin/MenuItems/Create" class="k-button k-button-md k-rounded-md k-primary">
+                    <i class="fas fa-plus me-1"></i> إضافة وجبة جديدة
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<form id="deleteForm" style="display:none;" method="post" action="/Admin/MenuItems/Delete">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteId" />
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            try {
+                var modelData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Items));
+
+                if (!modelData || modelData.length === 0) {
+                    $("#menuItemsGrid").html("<div class='empty-state'><i class='fas fa-hamburger'></i><h5>لا توجد بيانات</h5></div>");
+                    $("#menuItemsTable").hide();
+                    $("#menuItemsGrid").show();
+                    return;
+                }
+
+                if (typeof $.fn.kendoGrid === 'undefined') {
+                    return;
+                }
+
+                $("#menuItemsGrid").kendoGrid({
+                    dataSource: {
+                        data: modelData,
+                        pageSize: 10,
+                        schema: {
+                            model: {
+                                id: "id",
+                                fields: {
+                                    id: { type: "number" },
+                                    name: { type: "string" },
+                                    description: { type: "string" },
+                                    price: { type: "number" },
+                                    imageUrl: { type: "string" },
+                                    isAvailable: { type: "boolean" },
+                                    categoryName: { type: "string" },
+                                    createdAt: { type: "date" }
+                                }
+                            }
+                        }
+                    },
+                    height: 520,
+                    sortable: true,
+                    pageable: {
+                        buttonCount: 5,
+                        pageSizes: [10, 20, 50],
+                        messages: {
+                            display: "عرض {0} - {1} من {2} وجبة",
+                            empty: "لا توجد وجبات"
+                        }
+                    },
+                    columns: [
+                        {
+                            field: "imageUrl", title: "الصورة", width: 90,
+                            template: function(dataItem) {
+                                if (dataItem.imageUrl) {
+                                    return "<img src='" + dataItem.imageUrl + "' alt='" + dataItem.name + "' class='product-image' />";
+                                }
+                                return "<div class='product-image-placeholder'><i class='fas fa-utensils'></i></div>";
+                            }
+                        },
+                        { field: "name", title: "اسم الوجبة", template: "<strong class='text-secondary'>#= name #</strong>" },
+                        {
+                            field: "categoryName", title: "التصنيف", width: 150,
+                            template: "<span class='k-chip k-chip-solid-secondary'>#= categoryName #</span>"
+                        },
+                        {
+                            field: "price", title: "السعر", width: 140,
+                            template: "<strong class='text-primary'>#= kendo.toString(price, 'n2') #</strong> ريال"
+                        },
+                        {
+                            field: "isAvailable", title: "الحالة", width: 140,
+                            template: function(dataItem) {
+                                var color = dataItem.isAvailable ? "success" : "danger";
+                                var text = dataItem.isAvailable ? "متاح للطلب" : "غير متاح";
+                                return "<span class='k-chip k-chip-solid-" + color + "'>" + text + "</span>";
+                            }
+                        },
+                        {
+                            field: "createdAt", title: "تاريخ الإضافة", width: 140,
+                            template: "#= createdAt ? kendo.toString(new Date(createdAt), 'dd/MM/yyyy') : '' #"
+                        },
+                        {
+                            title: "الإجراءات", width: 180, sortable: false,
+                            template: "<div style='display:flex;gap:8px;'><a href='/Admin/MenuItems/Edit/#= id #' class='k-button k-button-md k-rounded-md k-warning' title='تعديل'><i class='fas fa-edit me-1'></i>تعديل</a>" +
+                                "<button type='button' class='k-button k-button-md k-rounded-md k-danger btn-delete' data-id='#= id #' data-name='#= name #' title='حذف'><i class='fas fa-trash me-1'></i>حذف</button></div>"
+                        }
+                    ]
+                });
+
+                $("#menuItemsTable").hide();
+                $("#menuItemsGrid").show();
+            } catch (e) {
+                console.error('Error initializing menuItems grid:', e);
+                $("#menuItemsGrid").hide();
+                $("#menuItemsTable").show();
+            }
+        });
+    </script>
+}

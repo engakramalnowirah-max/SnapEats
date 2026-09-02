@@ -1,0 +1,245 @@
+@model OrderDetailViewModel
+@{
+    ViewData["Title"] = $"تفاصيل الطلب #{Model.Id}";
+}
+
+<div class="page-header-bar order-details-page" data-order-id="@Model.Id">
+    <div class="header-title">
+        <h1><i class="fas fa-file-invoice-dollar"></i> تفاصيل الطلب #@Model.Id</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin/Dashboard">لوحة التحكم</a></li>
+                <li class="breadcrumb-item"><a href="/Admin/Orders">الطلبات</a></li>
+                <li class="breadcrumb-item active">طلب #@Model.Id</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="header-actions">
+        <span class="k-chip k-chip-solid-@(Model.Status == "Pending" ? "warning" : Model.Status == "Confirmed" ? "info" : Model.Status == "Preparing" ? "primary" : Model.Status == "OutForDelivery" ? "secondary" : Model.Status == "Delivered" ? "success" : "danger") order-status-badge" style="font-size: 0.95rem; padding: 8px 18px;">
+            <i class="fas fa-circle me-1" style="font-size:0.6rem;"></i> @Model.StatusText
+        </span>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <span><i class="fas fa-info-circle"></i> ملخص بيانات الطلب</span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted d-block">رقم الطلب</small>
+                    <strong class="fs-5">#@Model.Id</strong>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block">اسم العميل</small>
+                    <strong class="fs-6 text-secondary">@Model.CustomerName</strong>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted d-block">تاريخ التقديم</small>
+                    <strong>@Model.OrderDateFormatted</strong>
+                </div>
+                <hr />
+                <div>
+                    <small class="text-muted d-block">المبلغ الإجمالي المستحق</small>
+                    <h3 class="text-primary fw-bold mb-0">@Model.TotalFormatted ريال</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span><i class="fas fa-sliders-h"></i> تحديث حالة الطلب</span>
+            </div>
+            <div class="card-body">
+                @if (Model.Status != "Delivered" && Model.Status != "Cancelled")
+                {
+                    <div class="d-flex flex-column gap-2 order-actions-container" id="orderActions">
+                        @if (Model.Status == "Pending")
+                        {
+                            <form asp-area="Admin" asp-controller="Orders" asp-action="UpdateStatus" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="orderId" value="@Model.Id" />
+                                <input type="hidden" name="status" value="Preparing" />
+                                <button type="button" class="k-button k-button-md k-rounded-md k-primary w-100 btn-status-change" data-status-text="قيد التحضير">
+                                    <i class="fas fa-fire me-1"></i> بدء تحضير الوجبة
+                                </button>
+                            </form>
+                        }
+                        @if (Model.Status == "Confirmed")
+                        {
+                            <form asp-area="Admin" asp-controller="Orders" asp-action="UpdateStatus" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="orderId" value="@Model.Id" />
+                                <input type="hidden" name="status" value="Preparing" />
+                                <button type="button" class="k-button k-button-md k-rounded-md k-primary w-100 btn-status-change"
+                                        data-status-text="قيد التحضير">
+                                    <i class="fas fa-fire me-1"></i> بدء تحضير الوجبة
+                                </button>
+                            </form>
+                        }
+                        @if (Model.Status == "Preparing")
+                        {
+                            <form asp-area="Admin" asp-controller="Orders" asp-action="UpdateStatus" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="orderId" value="@Model.Id" />
+                                <input type="hidden" name="status" value="Delivered" />
+                                <button type="button" class="k-button k-button-md k-rounded-md k-success w-100 btn-status-change"
+                                        data-status-text="تم التوصيل">
+                                    <i class="fas fa-check-circle me-1"></i> تأكيد استلام العميل
+                                </button>
+                            </form>
+                        }
+
+                        @if (Model.Status == "OutForDelivery")
+                        {
+                            <form asp-area="Admin" asp-controller="Orders" asp-action="UpdateStatus" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="orderId" value="@Model.Id" />
+                                <input type="hidden" name="status" value="Delivered" />
+                                <button type="button" class="k-button k-button-md k-rounded-md k-success w-100 btn-status-change"
+                                        data-status-text="تم التوصيل">
+                                    <i class="fas fa-check-circle me-1"></i> تأكيد استلام العميل
+                                </button>
+                            </form>
+                        }
+
+                        @if (Model.Status == "Pending" || Model.Status == "Preparing")
+                        {
+                            <form asp-area="Admin" asp-controller="Orders" asp-action="Cancel" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="orderId" value="@Model.Id" />
+                                <button type="button" class="k-button k-button-md k-rounded-md k-danger w-100 btn-cancel-order">
+                                    <i class="fas fa-ban me-1"></i> إلغاء الطلب
+                                </button>
+                            </form>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="p-3 rounded border @(Model.Status == "Delivered" ? "bg-success-light text-success" : "bg-danger-light text-danger") font-weight-bold">
+                        <i class="fas fa-info-circle me-1"></i>
+                        @if (Model.Status == "Delivered")
+                        {
+                            <span>تم تسليم هذا الطلب بنجاح وهو مكتمل.</span>
+                        }
+                        else
+                        {
+                            <span>تم إلغاء هذا الطلب ولا يمكن تعديله.</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <span><i class="fas fa-utensils"></i> قائمة العناصر المطلوبة</span>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>الوجبة</th>
+                                <th>الكمية</th>
+                                <th>سعر الوحدة</th>
+                                <th>المجموع الفرعي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td>#@item.Id</td>
+                                    <td><strong class="text-secondary">@item.MenuItemName</strong></td>
+                                    <td><span class="badge bg-light text-dark border">@item.Quantity</span></td>
+                                    <td>@item.UnitPriceFormatted ريال</td>
+                                    <td><strong class="text-primary">@item.SubTotalFormatted</strong> ريال</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" class="text-start fw-bold fs-6">الإجمالي الشامل:</td>
+                                <td class="fw-bold fs-5 text-primary">@Model.TotalFormatted ريال</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span><i class="fas fa-route"></i> تتبع الخط الزمني للطلب</span>
+            </div>
+            <div class="card-body">
+                    <div class="d-flex flex-column gap-3 order-timeline" id="orderTimeline">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;"><i class="fas fa-check"></i></div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">تم تقديم الطلب</h6>
+                            <small class="text-muted">@Model.OrderDateFormatted</small>
+                        </div>
+                    </div>
+                    @if (Model.Status == "Confirmed" || Model.Status == "Preparing" || Model.Status == "OutForDelivery" || Model.Status == "Delivered")
+                    {
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-info text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;"><i class="fas fa-check"></i></div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">تأكيد الطلب</h6>
+                                <small class="text-muted">تم اعتماد الطلب من الإدارة</small>
+                            </div>
+                        </div>
+                    }
+                    @if (Model.Status == "Preparing" || Model.Status == "OutForDelivery" || Model.Status == "Delivered")
+                    {
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;"><i class="fas fa-fire"></i></div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">تحضير الوجبة</h6>
+                                <small class="text-muted">جاري طهي وتجهيز الوجبات المحددة</small>
+                            </div>
+                        </div>
+                    }
+                    @if (Model.Status == "OutForDelivery" || Model.Status == "Delivered")
+                    {
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;"><i class="fas fa-truck"></i></div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">قيد التوصيل</h6>
+                                <small class="text-muted">السائق في الطريق لإيصال الوجبة</small>
+                            </div>
+                        </div>
+                    }
+                    @if (Model.Status == "Delivered")
+                    {
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;"><i class="fas fa-check-circle"></i></div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">اكتمل التوصيل</h6>
+                                <small class="text-muted">تم التسليم النهائي للعميل بنجاح</small>
+                            </div>
+                        </div>
+                    }
+                    @if (Model.Status == "Cancelled")
+                    {
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;"><i class="fas fa-times"></i></div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">تم إلغاء الطلب</h6>
+                                <small class="text-muted">تم إلغاء الطلب</small>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

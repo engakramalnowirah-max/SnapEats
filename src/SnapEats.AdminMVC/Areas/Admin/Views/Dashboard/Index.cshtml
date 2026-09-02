@@ -1,0 +1,295 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "لوحة التحكم";
+}
+
+<div class="page-header-bar">
+    <div class="header-title">
+        <h1><i class="fas fa-chart-pie"></i> لوحة التحكم الرئيسيّة</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item active">لوحة التحكم</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="header-actions">
+        <span class="badge bg-light text-dark p-2 border">
+            <i class="fas fa-sync-alt me-1 text-primary"></i> آخر تحديث: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+        </span>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon primary"><i class="fas fa-shopping-bag"></i></div>
+            <div class="stat-label">إجمالي الطلبات</div>
+            <div class="stat-value">@Model.TotalOrders</div>
+            <div class="stat-change text-primary">
+                <i class="fas fa-arrow-up"></i> جميع الطلبات المسجلة
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon success"><i class="fas fa-tags"></i></div>
+            <div class="stat-label">التصنيفات المتاحة</div>
+            <div class="stat-value">@Model.TotalCategories</div>
+            <div class="stat-change text-success">
+                <i class="fas fa-folder-open"></i> تصنيفات الطعام النشطة
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon info"><i class="fas fa-hamburger"></i></div>
+            <div class="stat-label">عناصر قائمة الطعام</div>
+            <div class="stat-value">@Model.TotalMenuItems</div>
+            <div class="stat-change text-info">
+                <i class="fas fa-utensils"></i> وجبات ومشروبات
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon warning"><i class="fas fa-clock"></i></div>
+            <div class="stat-label">الطلبات المعلقة</div>
+            <div class="stat-value">@Model.PendingOrders</div>
+            <div class="stat-change text-warning">
+                <i class="fas fa-exclamation-circle"></i> بحاجة إلى مراجعة واكتمال
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-8">
+        <div class="card h-100">
+            <div class="card-header">
+                <span><i class="fas fa-chart-line"></i> حركة الطلبات خلال الأسبوع الحالي</span>
+                <span class="badge bg-primary-light text-primary">تحليلات الأسبوع</span>
+            </div>
+            <div class="card-body">
+                <div id="ordersChart" style="height: 320px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <span><i class="fas fa-chart-pie"></i> توزيع حالات الطلبات</span>
+            </div>
+            <div class="card-body">
+                <div id="statusPieChart" style="height: 320px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-receipt"></i> أحدث الطلبات المستلمة</span>
+        <a href="/Admin/Orders" class="k-button k-button-md k-rounded-md k-primary">
+            <i class="fas fa-eye me-1"></i> عرض كافة الطلبات
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div id="recentOrdersGrid" style="display:none;"></div>
+        <div id="recentOrdersTable" style="display:none;">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>رقم الطلب</th>
+                            <th>العميل</th>
+                            <th>التاريخ والوقت</th>
+                            <th>المجموع الإجمالي</th>
+                            <th>حالة الطلب</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var order in Model.RecentOrders)
+                        {
+                            <tr id="recent-order-row-@order.Id">
+                                <td><strong>#@order.Id</strong></td>
+                                <td>@order.CustomerName</td>
+                                <td>@order.OrderDateFormatted</td>
+                                <td><strong class="text-primary">@order.TotalFormatted</strong> ريال</td>
+                                <td>
+                                    <span class="k-chip k-chip-solid-@(order.Status == "Pending" ? "warning" : order.Status == "Confirmed" ? "info" : order.Status == "Preparing" ? "primary" : order.Status == "OutForDelivery" ? "secondary" : order.Status == "Delivered" ? "success" : "danger")">@order.StatusText</span>
+                                </td>
+                                <td>
+                                    <a href="/Admin/Orders/Details/@order.Id" class="k-button k-button-md k-rounded-md k-info" title="عرض التفاصيل">
+                                        <i class="fas fa-eye me-1"></i> عرض
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @if (!Model.RecentOrders.Any())
+        {
+            <div class="empty-state" id="recentOrdersEmptyState">
+                <i class="fas fa-shopping-cart"></i>
+                <h5>لا توجد طلبات حديثة</h5>
+                <p>عندما يتم إنشاء الطلبات بواسطة العملاء، ستظهر تفاصيلها فوراً هنا.</p>
+            </div>
+        }
+    </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-shopping-cart"></i>
+                <h5>لا توجد طلبات حديثة</h5>
+                <p>عندما يتم إنشاء الطلبات بواسطة العملاء، ستظهر تفاصيلها فوراً هنا.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            try {
+                // Initialize Charts First
+                var days = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+                if (typeof $.fn.kendoChart !== 'undefined') {
+                    $("#ordersChart").kendoChart({
+                        title: { text: "" },
+                        legend: { visible: false },
+                        series: [{
+                            type: "line",
+                            data: [14, 22, 18, 28, 24, 35, 20],
+                            color: "#FF4757",
+                            width: 3,
+                            markers: { visible: true, background: "#FF4757", size: 6, border: { color: "#fff", width: 2 } }
+                        }],
+                        categoryAxis: {
+                            categories: days,
+                            majorGridLines: { visible: false },
+                            labels: { font: "12px Almarai" }
+                        },
+                        valueAxis: {
+                            line: { visible: false },
+                            labels: { font: "12px Almarai" },
+                            majorGridLines: { visible: true, color: "#E2E8F0" }
+                        },
+                        tooltip: { visible: true, format: "{0} طلب", shared: true }
+                    });
+
+                    $("#statusPieChart").kendoChart({
+                        title: { text: "" },
+                        legend: {
+                            position: "bottom",
+                            labels: { font: "12px Almarai" }
+                        },
+                        series: [{
+                            type: "doughnut",
+                            data: [
+                                { category: "قيد الانتظار", value: @(Model.PendingOrders > 0 ? Model.PendingOrders : 15), color: "#FFA502" },
+                                { category: "مؤكد", value: 25, color: "#1E90FF" },
+                                { category: "قيد التحضير", value: 20, color: "#FF4757" },
+                                { category: "قيد التوصيل", value: 10, color: "#64748B" },
+                                { category: "تم التوصيل", value: 30, color: "#2ED573" }
+                            ],
+                            labels: {
+                                visible: true,
+                                format: "{0}%",
+                                font: "12px Almarai"
+                            }
+                        }],
+                        tooltip: { visible: true }
+                    });
+                }
+
+                // Grid Initialization
+                var recentOrders = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.RecentOrders));
+                if (!recentOrders || recentOrders.length === 0) {
+                    $("#recentOrdersGrid").hide();
+                    $("#recentOrdersTable").show();
+                }
+
+                if (typeof $.fn.kendoGrid !== 'undefined') {
+                    var statusMap = {
+                        "Pending": "قيد الانتظار",
+                        "Confirmed": "مؤكد",
+                        "Preparing": "قيد التحضير",
+                        "OutForDelivery": "قيد التوصيل",
+                        "Delivered": "تم التوصيل",
+                        "Cancelled": "ملغي"
+                    };
+                    var statusColors = {
+                        "Pending": "warning",
+                        "Confirmed": "info",
+                        "Preparing": "primary",
+                        "OutForDelivery": "secondary",
+                        "Delivered": "success",
+                        "Cancelled": "danger"
+                    };
+
+                    $("#recentOrdersGrid").kendoGrid({
+                        dataSource: {
+                            data: recentOrders,
+                            pageSize: 5,
+                            schema: {
+                                model: {
+                                    id: "Id",
+                                    fields: {
+                                        Id: { type: "number" },
+                                        customerName: { type: "string" },
+                                        orderDate: { type: "date" },
+                                        status: { type: "string" },
+                                        totalAmount: { type: "number" },
+                                        itemCount: { type: "number" }
+                                    }
+                                }
+                            }
+                        },
+                        height: 340,
+                        sortable: true,
+                        pageable: {
+                            buttonCount: 3,
+                            pageSizes: [5, 10]
+                        },
+                        columns: [
+                            { field: "Id", title: "رقم الطلب", width: 100, template: "<strong>#= '#' + Id #</strong>" },
+                            { field: "customerName", title: "العميل" },
+                            {
+                                field: "orderDate", title: "التاريخ", width: 150,
+                                template: "#= orderDate ? kendo.toString(new Date(orderDate), 'dd/MM/yyyy HH:mm') : '' #"
+                            },
+                            {
+                                field: "totalAmount", title: "المجموع", width: 140,
+                                template: "<strong class='text-primary'>#= kendo.toString(totalAmount, 'n2') #</strong> ريال"
+                            },
+                            {
+                                field: "status", title: "الحالة", width: 130,
+                                template: function(dataItem) {
+                                    var color = statusColors[dataItem.status] || "secondary";
+                                    var text = statusMap[dataItem.status] || dataItem.status;
+                                    return "<span class='k-chip k-chip-solid-" + color + "'>" + text + "</span>";
+                                }
+                            },
+                            {
+                                title: "الإجراءات", width: 110, sortable: false,
+                                template: "<a href='/Admin/Orders/Details/#= Id #' class='k-button k-button-md k-rounded-md k-info' title='عرض التفاصيل'><i class='fas fa-eye me-1'></i>عرض</a>"
+                            }
+                        ]
+                    });
+
+                    $("#recentOrdersTable").hide();
+                    $("#recentOrdersGrid").show();
+                }
+            } catch (e) {
+                console.error('Error initializing dashboard:', e);
+                $("#recentOrdersGrid").hide();
+                $("#recentOrdersTable").show();
+            }
+        });
+    </script>
+}

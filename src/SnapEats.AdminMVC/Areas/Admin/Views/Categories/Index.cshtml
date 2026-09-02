@@ -1,0 +1,198 @@
+@model PagedResultViewModel<CategoryViewModel>
+@{
+    ViewData["Title"] = "التصنيفات";
+    var search = ViewBag.Search as string;
+}
+
+<div class="page-header-bar">
+    <div class="header-title">
+        <h1><i class="fas fa-tags"></i> إدراة تصنيفات الطعام</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin/Dashboard">لوحة التحكم</a></li>
+                <li class="breadcrumb-item active">التصنيفات</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="header-actions">
+        <a href="/Admin/Categories/Create" class="k-button k-button-md k-rounded-md k-primary">
+            <i class="fas fa-plus me-1"></i> إضافة تصنيف جديد
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row mb-4 align-items-center">
+            <div class="col-md-6">
+                <form method="get" action="/Admin/Categories" class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" name="search" class="form-control" placeholder="بحث عن تصنيف..."
+                           value="@search" />
+                </form>
+            </div>
+            <div class="col-md-6 text-end d-none d-md-block">
+                <span class="text-muted font-weight-bold">إجمالي التصنيفات: @Model.TotalCount</span>
+            </div>
+        </div>
+
+        @if (Model.Items.Any())
+        {
+            <div id="categoriesGrid" style="display:none;"></div>
+            <div id="categoriesTable">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>اسم التصنيف</th>
+                                <th>الوصف</th>
+                                <th>عدد العناصر</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td><strong>#@item.Id</strong></td>
+                                    <td><strong class="text-secondary">@item.Name</strong></td>
+                                    <td>@(string.IsNullOrEmpty(item.Description) ? "-" : item.Description)</td>
+                                    <td><span class="k-chip k-chip-solid-info">@item.MenuItemCount عناصر</span></td>
+                                    <td>
+                                        <div style="display:flex;gap:8px;align-items:center;">
+                                            <a href="/Admin/Categories/Edit/@item.Id" class="k-button k-button-md k-rounded-md k-warning" title="تعديل">
+                                                <i class="fas fa-edit me-1"></i> تعديل
+                                            </a>
+                                            <button type="button" class="k-button k-button-md k-rounded-md k-danger btn-delete" data-id="@item.Id" data-name="@item.Name" title="حذف">
+                                                <i class="fas fa-trash me-1"></i> حذف
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="pagination-wrap">
+                <div class="pagination-info">
+                    عرض @Model.Items.Count من إجمالي @Model.TotalCount تصنيف
+                </div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                            <a class="page-link" href="/Admin/Categories?page=@(Model.PageNumber - 1)&search=@search">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                <a class="page-link" href="/Admin/Categories?page=@i&search=@search">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                            <a class="page-link" href="/Admin/Categories?page=@(Model.PageNumber + 1)&search=@search">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-tags"></i>
+                <h5>لا توجد تصنيفات معرفة</h5>
+                <p>لم يتم إضافة أي تصنيفات في النظام حتى الآن. اضغط أدناه لإضافة أول تصنيف.</p>
+                <a href="/Admin/Categories/Create" class="k-button k-button-md k-rounded-md k-primary">
+                    <i class="fas fa-plus me-1"></i> إضافة تصنيف جديد
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<form id="deleteForm" style="display:none;" method="post" action="/Admin/Categories/Delete">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteId" />
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            try {
+                var modelData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Items));
+                
+                if (!modelData || modelData.length === 0) {
+                    $("#categoriesGrid").html("<div class='empty-state'><i class='fas fa-tags'></i><h5>لا توجد بيانات</h5></div>");
+                    $("#categoriesTable").hide();
+                    $("#categoriesGrid").show();
+                    return;
+                }
+
+                if (typeof $.fn.kendoGrid === 'undefined') {
+                    return;
+                }
+
+                $("#categoriesGrid").kendoGrid({
+                    dataSource: {
+                        data: modelData,
+                        pageSize: 10,
+                        schema: {
+                            model: {
+                                id: "id",
+                                fields: {
+                                    id: { type: "number" },
+                                    name: { type: "string" },
+                                    description: { type: "string" },
+                                    menuItemCount: { type: "number" },
+                                    createdAt: { type: "date" }
+                                }
+                            }
+                        }
+                    },
+                    height: 520,
+                    sortable: true,
+                    pageable: {
+                        buttonCount: 5,
+                        pageSizes: [10, 20, 50],
+                        messages: {
+                            display: "عرض {0} - {1} من {2} تصنيف",
+                            empty: "لا توجد تصنيفات"
+                        }
+                    },
+                    columns: [
+                        { field: "id", title: "#", width: 80, template: "<strong>#= '#' + id #</strong>" },
+                        { field: "name", title: "اسم التصنيف", template: "<strong class='text-secondary'>#= name #</strong>" },
+                        { field: "description", title: "الوصف", template: "#= description || '-' #" },
+                        {
+                            field: "menuItemCount", title: "عدد العناصر", width: 140,
+                            template: "<span class='k-chip k-chip-solid-info'>#= menuItemCount # عناصر</span>"
+                        },
+                        {
+                            field: "createdAt", title: "تاريخ الإنشاء", width: 150,
+                            template: "#= createdAt ? kendo.toString(new Date(createdAt), 'dd/MM/yyyy') : '' #"
+                        },
+                        {
+                            title: "الإجراءات", width: 180, sortable: false,
+                            template: "<div style='display:flex;gap:8px;'><a href='/Admin/Categories/Edit/#= id #' class='k-button k-button-md k-rounded-md k-warning' title='تعديل'><i class='fas fa-edit me-1'></i>تعديل</a>" +
+                                "<button type='button' class='k-button k-button-md k-rounded-md k-danger btn-delete' data-id='#= id #' data-name='#= name #' title='حذف'><i class='fas fa-trash me-1'></i>حذف</button></div>"
+                        }
+                    ]
+                });
+
+                $("#categoriesTable").hide();
+                $("#categoriesGrid").show();
+            } catch (e) {
+                console.error('Error initializing categories grid:', e);
+                $("#categoriesGrid").hide();
+                $("#categoriesTable").show();
+            }
+        });
+    </script>
+}

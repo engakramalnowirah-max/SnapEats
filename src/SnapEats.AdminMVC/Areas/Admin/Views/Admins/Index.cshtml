@@ -1,0 +1,188 @@
+@model PagedResultViewModel<AdminViewModel>
+@{
+    ViewData["Title"] = "إدارة المسؤولين";
+    var search = ViewBag.Search as string;
+}
+
+<div class="page-header-bar">
+    <div class="header-title">
+        <h1><i class="fas fa-user-shield"></i> إدارة حسابات المسؤولين (Admins)</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin/Dashboard">لوحة التحكم</a></li>
+                <li class="breadcrumb-item active">المسؤولين</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="header-actions">
+        <a href="/Admin/Admins/Create" class="k-button k-button-md k-rounded-md k-primary">
+            <i class="fas fa-user-plus me-1"></i> إضافة مسؤول جديد
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="row mb-4 align-items-center">
+            <div class="col-md-6">
+                <form method="get" action="/Admin/Admins" class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" name="search" class="form-control" placeholder="بحث بالاسم أو البريد الإلكتروني..."
+                           value="@search" />
+                </form>
+            </div>
+            <div class="col-md-6 text-end d-none d-md-block">
+                <span class="text-muted font-weight-bold">إجمالي المسؤولين: @Model.TotalCount</span>
+            </div>
+        </div>
+
+        @if (Model.Items.Any())
+        {
+            <div id="adminsGrid" style="display:none;"></div>
+            <div id="adminsTable">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>الاسم الكامل</th>
+                                <th>البريد الإلكتروني</th>
+                                <th>الدور</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td><strong>#@item.Id</strong></td>
+                                    <td><strong class="text-secondary">@item.FullName</strong></td>
+                                    <td>@item.Email</td>
+                                    <td><span class="k-chip k-chip-solid-primary"><i class="fas fa-user-shield me-1"></i> مدير نظام</span></td>
+                                    <td>
+                                        <div style="display:flex;gap:8px;align-items:center;">
+                                            <button type="button" class="k-button k-button-md k-rounded-md k-danger btn-delete" data-id="@item.Id" data-name="@item.FullName" title="حذف">
+                                                <i class="fas fa-trash me-1"></i> حذف
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="pagination-wrap">
+                <div class="pagination-info">
+                    عرض @Model.Items.Count من إجمالي @Model.TotalCount مسؤول
+                </div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                            <a class="page-link" href="/Admin/Admins?page=@(Model.PageNumber - 1)&search=@search">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                <a class="page-link" href="/Admin/Admins?page=@i&search=@search">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                            <a class="page-link" href="/Admin/Admins?page=@(Model.PageNumber + 1)&search=@search">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-user-shield"></i>
+                <h5>لا يوجد مسؤولون معرفون</h5>
+                <p>لم يتم العثور على حسابات مسؤولين تطابق البحث.</p>
+                <a href="/Admin/Admins/Create" class="k-button k-button-md k-rounded-md k-primary">
+                    <i class="fas fa-user-plus me-1"></i> إضافة مسؤول جديد
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<form id="deleteForm" style="display:none;" method="post" action="/Admin/Admins/Delete">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteId" />
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(function () {
+            try {
+                var modelData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Items));
+                
+                if (!modelData || modelData.length === 0) {
+                    $("#adminsGrid").html("<div class='empty-state'><i class='fas fa-user-shield'></i><h5>لا توجد بيانات</h5></div>");
+                    $("#adminsTable").hide();
+                    $("#adminsGrid").show();
+                    return;
+                }
+
+                if (typeof $.fn.kendoGrid === 'undefined') {
+                    return;
+                }
+
+                $("#adminsGrid").kendoGrid({
+                    dataSource: {
+                        data: modelData,
+                        pageSize: 10,
+                        schema: {
+                            model: {
+                                id: "id",
+                                fields: {
+                                    id: { type: "number" },
+                                    fullName: { type: "string" },
+                                    email: { type: "string" }
+                                }
+                            }
+                        }
+                    },
+                    height: 480,
+                    sortable: true,
+                    pageable: {
+                        buttonCount: 5,
+                        pageSizes: [10, 20, 50],
+                        messages: {
+                            display: "عرض {0} - {1} من {2} مسؤول",
+                            empty: "لا يوجد مسؤولون"
+                        }
+                    },
+                    columns: [
+                        { field: "id", title: "#", width: 80, template: "<strong>#= '#' + id #</strong>" },
+                        { field: "fullName", title: "الاسم الكامل", template: "<strong class='text-secondary'>#= fullName #</strong>" },
+                        { field: "email", title: "البريد الإلكتروني" },
+                        {
+                            title: "الدور", width: 140,
+                            template: "<span class='k-chip k-chip-solid-primary'><i class='fas fa-user-shield me-1'></i> مدير نظام</span>"
+                        },
+                        {
+                            title: "الإجراءات", width: 140, sortable: false,
+                            template: "<button type='button' class='k-button k-button-md k-rounded-md k-danger btn-delete' data-id='#= id #' data-name='#= fullName #' title='حذف'><i class='fas fa-trash me-1'></i>حذف</button>"
+                        }
+                    ]
+                });
+
+                $("#adminsTable").hide();
+                $("#adminsGrid").show();
+            } catch (e) {
+                console.error('Error initializing admins grid:', e);
+                $("#adminsGrid").hide();
+                $("#adminsTable").show();
+            }
+        });
+    </script>
+}
