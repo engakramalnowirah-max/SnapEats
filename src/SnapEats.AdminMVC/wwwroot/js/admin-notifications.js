@@ -5,8 +5,39 @@
     'use strict';
 
     // Target API SignalR Hub Endpoint
-    const baseUrl = (window.SNAP_EATS_API_URL || "http://localhost:5065").replace(/\/$/, "");
-    const apiHubUrl = baseUrl + "/hubs/order";
+    function resolveHubUrl() {
+        const configured =
+            window.SNAP_EATS_SIGNALR_URL ||
+            ((window.SNAP_EATS_API_URL || "http://localhost:5065")
+                .replace(/\/$/, "") + "/hubs/order");
+
+        try {
+            const url = new URL(configured, window.location.origin);
+
+            const browserHost = window.location.hostname;
+
+            const configuredIsLoopback =
+                url.hostname === "localhost" ||
+                url.hostname === "127.0.0.1";
+
+            const browserIsLoopback =
+                browserHost === "localhost" ||
+                browserHost === "127.0.0.1";
+
+            if (configuredIsLoopback && !browserIsLoopback) {
+                url.hostname = browserHost;
+            }
+
+            return url.toString().replace(/\/$/, "");
+        }
+        catch (e) {
+            return configured;
+        }
+    }
+
+    console.log(" SIGNALR JS FILE LOADED ");
+
+    const apiHubUrl = resolveHubUrl();
 
     if (typeof signalR === 'undefined') {
         console.warn("SignalR library not loaded. Real-time updates will be unavailable.");
@@ -59,6 +90,30 @@
         } catch (e) {
             return dateStr;
         }
+    }
+
+    function getAntiForgeryInputHtml() {
+        const token =
+            document.querySelector(
+                'input[name="__RequestVerificationToken"]'
+            )?.value;
+
+        if (!token) {
+            return "";
+        }
+
+        const escaped = String(token)
+            .replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+        return `
+        <input
+            type="hidden"
+            name="__RequestVerificationToken"
+            value="${escaped}" />
+    `;
     }
 
     // 1. EVENT: OrderCreated
@@ -401,6 +456,95 @@
         }
     });
 
+    connection.on("OrderCancelled", function (data) {
+
+        console.log(
+            "⚡ SignalR Real-Time Event: OrderCancelled",
+            data
+        );
+
+        const orderId =
+            data.orderId ||
+            data.OrderId ||
+            data.Id ||
+            data.id;
+
+        showToast(
+            `تم إلغاء الطلب #${orderId}`,
+            "warning"
+        );
+
+        if (!window.$) {
+            return;
+        }
+
+        // تحديث Orders Grid
+        if (
+            $("#ordersGrid").length > 0 &&
+            $("#ordersGrid").data("kendoGrid")
+        ) {
+
+            const grid =
+                $("#ordersGrid").data("kendoGrid");
+
+            const dataItem =
+                grid.dataSource.get(orderId);
+
+            if (dataItem) {
+                dataItem.set(
+                    "status",
+                    "Cancelled"
+                );
+            }
+            else {
+                grid.dataSource.read();
+            }
+        }
+
+        // تحديث Dashboard Grid
+        if (
+            $("#recentOrdersGrid").length > 0 &&
+            $("#recentOrdersGrid").data("kendoGrid")
+        ) {
+
+            const recentGrid =
+                $("#recentOrdersGrid")
+                    .data("kendoGrid");
+
+            const dataItem =
+                recentGrid.dataSource.get(orderId);
+
+            if (dataItem) {
+                dataItem.set(
+                    "status",
+                    "Cancelled"
+                );
+            }
+        }
+
+        // تحديث الجدول العادي
+        $(
+            `#order-row-${orderId} .k-chip,
+         #recent-order-row-${orderId} .k-chip`
+        ).replaceWith(
+            '<span class="k-chip k-chip-solid-danger">ملغي</span>'
+        );
+
+        // إذا المستخدم فاتح صفحة تفاصيل نفس الطلب
+        const detailsPage =
+            $(".order-details-page");
+
+        const currentOrderId =
+            detailsPage.data("orderId");
+
+        if (
+            detailsPage.length > 0 &&
+            currentOrderId &&
+            currentOrderId == orderId
+        ) {
+            window.location.reload();
+        }
+    });
     // 6. EVENT: MenuItemChanged
     connection.on("MenuItemChanged", function (data) {
         console.log("⚡ SignalR Real-Time Event: MenuItemChanged", data);
@@ -430,7 +574,13 @@
     }
 
     connection.onclose(function (error) {
-        console.warn("[SnapEats SignalR] Connection lost. Attempting reconnect...", error);
+
+        console.warn(
+            "[SnapEats SignalR] Connection closed. Scheduling a fresh connection...",
+            error
+        );
+
+        setTimeout(startConnection, 5000);
     });
 
     if (document.readyState === "loading") {
@@ -438,4 +588,20 @@
     } else {
         startConnection();
     }
+
+    connection.onreconnecting(function (error) {
+
+        console.warn(
+            "[SnapEats SignalR] Reconnecting...",
+            error
+        );
+    });
+
+    connection.onreconnected(function (connectionId) {
+
+        console.log(
+            "[SnapEats SignalR] Reconnected. ConnectionId:",
+            connectionId
+        );
+    });
 })();
