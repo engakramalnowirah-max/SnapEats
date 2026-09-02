@@ -73,20 +73,20 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
-app.Use(async (context, next) =>
-{
-    if (string.Equals(context.Request.Method, "OPTIONS", StringComparison.OrdinalIgnoreCase))
-    {
-        context.Response.StatusCode = StatusCodes.Status200OK;
-        context.Response.Headers["Access-Control-Allow-Origin"] = "*";
-        context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept, Cache-Control";
-        context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-        await context.Response.StartAsync();
-        return;
-    }
-    await next();
-});
+//app.Use(async (context, next) =>
+//{
+//    if (string.Equals(context.Request.Method, "OPTIONS", StringComparison.OrdinalIgnoreCase))
+//    {
+//        context.Response.StatusCode = StatusCodes.Status200OK;
+//        context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+//        context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+//        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept, Cache-Control";
+//        context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+//        await context.Response.StartAsync();
+//        return;
+//    }
+//    await next();
+//});
 
 app.UseCors("SnapEatsCors");
 
