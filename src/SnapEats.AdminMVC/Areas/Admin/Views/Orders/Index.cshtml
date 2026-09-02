@@ -57,7 +57,7 @@
                     <tbody>
                         @foreach (var order in Model.Items)
                         {
-                            <tr>
+                            <tr id="order-row-@order.Id">
                                 <td><strong>#@order.Id</strong></td>
                                 <td><strong class="text-secondary">@order.CustomerName</strong></td>
                                 <td>@order.OrderDateFormatted</td>
@@ -217,7 +217,7 @@
                             title: "الإجراءات", width: 220, sortable: false,
                             template: "<div style='display:flex;gap:6px;'><a href='/Admin/Orders/Details/#= Id #' class='k-button k-button-md k-rounded-md k-info' title='عرض'><i class='fas fa-eye me-1'></i>عرض</a>" +
                                 "<a href='/Admin/Orders/Edit/#= Id #' class='k-button k-button-md k-rounded-md k-warning' title='تعديل'><i class='fas fa-edit me-1'></i>تعديل</a>" +
-                                "<button type='button' class='k-button k-button-md k-rounded-md k-danger btn-delete' data-id='#= Id #' data-name='#' + Id + '' title='حذف'><i class='fas fa-trash me-1'></i>حذف</button></div>"
+                                "<button type='button' class='k-button k-button-md k-rounded-md k-danger btn-delete' data-id='#= Id #' data-name='#= Id #' title='حذف'><i class='fas fa-trash me-1'></i>حذف</button></div>"
                         }
                     ]
                 });
